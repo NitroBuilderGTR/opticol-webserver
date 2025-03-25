@@ -1,0 +1,102 @@
+@font-face {
+    font-family: 'Montserrat';
+    src: url('./fonts/Montserrat-Light.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Montserrat', sans-serif;
+  background-color: #1e1e1e;
+  color: #d4d4d4;
+}
+
+#titlebar {
+  background-color: #252526;
+  height: 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 10px;
+  -webkit-app-region: drag; /* Make titlebar draggable */
+}
+
+.left-nav, .right-nav {
+  display: flex;
+  align-items: center;
+}
+
+.window-title {
+  font-size: 1em;
+  font-weight: bold;
+}
+
+.nav-buttons {
+  background-color: transparent;
+  color: #d4d4d4;
+  border: none;
+  font-size: 1em;
+  padding: 0 8px;
+  cursor: pointer;
+  -webkit-app-region: no-drag; /* Prevent dragging buttons */
+}
+
+.nav-buttons:hover {
+  background-color: #383838;
+}
+
+#console {
+  width: 95%;
+  height: 400px;
+  background-color: #252526;
+  border: 1px solid #3f3f3f;
+  padding: 10px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  box-sizing: border-box;
+  border-radius: 8px;
+  margin: 20px auto;
+}
+
+#console p {
+  margin: 0;
+  padding: 2px;
+}
+
+#console .error {
+  color: #f44747;
+}
+
+#console .success {
+  color: #6a9955;
+}
+
+#console .info {
+  color: #4ec9b0;
+}
+
+#console a {
+  color: #89cff0;
+  text-decoration: none;
+}
+
+#buttons {
+  margin-top: 10px;
+  text-align: center;
+}
+
+#buttons button {
+  background-color: #383838;
+  color: #d4d4d4;
+  border: 1px solid #3f3f3f;
+  padding: 8px 15px;
+  margin: 5px;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+#buttons button:hover {
+  background-color: #4a4a4a;
+}
