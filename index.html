@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Opticol Web Server</title>
+    <link rel="stylesheet" href="index.css" />
+    <link rel="stylesheet" href="footer.css">
+</head>
+
+<body>
+    <div id="titlebar">
+        <h2 id="title">Opticol</h2>
+        <div id="titlebar-buttons">
+            <button id="minimizeButton">⚊</button>
+            <button id="maximizeButton">☐</button>
+            <button id="closeButton">⛌</button>
+        </div>
+    </div>
+    <div class="console-div">
+        <a id="console-title">Console</a>
+        <div id="console"></div>
+    </div>
+
+    <div id="button-container">
+        <button id="startButton">Start Web Server</button>
+        <button id="stopButton">Stop Web Server</button>
+    </div>
+    
+    <div></div>
+    <!-- Logic that attaches the buttons and console to the backend application handler -->
+    <script>
+        // References to objects such as buttons and the console. This allows
+        // the items to be detected to the index.js file, allowing functionality of the buttons etc
+        const consoleDiv = document.getElementById('console');
+        const startButton = document.getElementById('startButton');
+        const stopButton = document.getElementById('stopButton');
+        const minimizeButton = document.getElementById('minimizeButton');
+        const maximizeButton = document.getElementById('maximizeButton');
+        const closeButton = document.getElementById('closeButton');
+        
+
+
+
+
+        // The logic that handles the webServer.js log requests being added to the console.
+        // It also adds functionality to detect links and allow them to be opened in the browser.
+        function log(message) {
+            const urlRegex = /(https?:\/\/[^\s]+)/gi;
+            const formattedMessage = message.replace(urlRegex, '<a href="$1" class="clickable-link">$1</a>');
+
+            consoleDiv.innerHTML += `${formattedMessage}<br>`;
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+
+            const links = consoleDiv.querySelectorAll('.clickable-link');
+            links.forEach(link => {
+                link.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    window.electronAPI.openExternal(link.href);
+                });
+            });
+        }
+        
+        // This is the logic that starts the webServer.js Node.JS file when the "Start Web Server"
+        // button is clicked.
+        // webServer.js is the web server itself.
+        startButton.addEventListener('click', async () => {
+            try {
+                const result = await window.electronAPI.startServer('./webserverFiles/webServer.js');
+
+                if (result.error) {
+                    log(`Error: ${result.error}`);
+                } else {
+                    log(result.success);
+                }
+            } catch (error) {
+                log(`Unexpected error: ${error}`);
+            }
+        });
+
+        // This is the logic that stops the webServer.js Node.JS file when the "Stop Web Server"
+        // button is clicked. Basically the opposite of the function above.
+        stopButton.addEventListener('click', async () => {
+            try {
+                const result = await window.electronAPI.stopServer();
+
+                if (result.error) {
+                    log(`Error: ${result.error}`);
+                } else {
+                    log(result.success);
+                }
+            } catch (error) {
+                log(`Unexpected error: ${error}`);
+            }
+        });
+
+
+        // This is the final function that allows the webServer.js file to log the output
+        // to the HTML console / stylised console
+        window.electronAPI.onServerOutput((data) => {
+            log(data);
+        });
+
+        minimizeButton.addEventListener('click', async () => {
+            await window.electronAPI.minimizeWindow();
+        });
+
+        maximizeButton.addEventListener('click', async () => {
+            await window.electronAPI.maximizeWindow();
+        });
+
+        closeButton.addEventListener('click', async () => {
+            await window.electronAPI.closeWindow();
+        });
+    </script>
+</body>
+
+<body class="footerBody">
+  <footer>
+    <div class="info">
+  <div class="copyright">Made By LexiiiTheLunatic</div>
+      <div class="legal">
+        <a>Made with love ❤️🏳️‍⚧️</a>
+      </div>        
+    </div>
+  </footer>
+</body>
+</html>
