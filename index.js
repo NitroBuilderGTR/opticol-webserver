@@ -1,9 +1,13 @@
 const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const { spawn } = require('child_process');
 const path = require('path');
+const fs = require('fs');
 
 let webServerProcess = null;
 let mainWindow = null;
+let filePathToWatch = './webserverFiles/webServer.js';
+let publicDir = "./webserverFiles/public"; // Directory to watch
+let fileWatchers = [];
 
 function createWindow() {
     mainWindow = new BrowserWindow({
@@ -28,45 +32,80 @@ function createWindow() {
     });
 }
 
-app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') {
-        app.quit();
-        if (webServerProcess) {
-          webServerProcess.kill();
-          webServerProcess = null;
-          console.log("Opticol Web Server shutting down")
-      } else {
-          console.log("Opticol Web Server unable to shut down. This might be because it was either not running or an error occured.")
-      }
-    }
-});
+function startWebServer(event) {
+    webServerProcess = spawn('node', [filePathToWatch]);
 
-app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-        createWindow();
+    webServerProcess.stdout.on('data', (data) => {
+        event.sender.send('server-output', data.toString());
+    });
+
+    webServerProcess.stderr.on('data', (data) => {
+        event.sender.send('server-output', data.toString());
+    });
+
+    webServerProcess.on('close', (code) => {
+        if (code !== 0) {
+            event.sender.send('server-output', 'Server process closed');
+        } else {
+            event.sender.send('server-output', 'Server process closed idk');
+        }
+    });
+}
+
+function restartWebServer(event) {
+    if (webServerProcess) {
+        webServerProcess.kill();
+        webServerProcess = null;
     }
-});
+    startWebServer(event);
+    event.sender.send('server-output', 'Server restarted');
+}
+
+function watchFile(filePath, event) {
+    const watcher = fs.watch(filePath, (eventType, filename) => {
+        if (eventType === 'change') {
+            console.log(`${filePath} changed; restarting server...`);
+            event.sender.send('server-output', `${filePath} changed; restarting server...`);
+            restartWebServer(event);
+        }
+    });
+    fileWatchers.push(watcher);
+}
+
+function watchDirectory(dirPath, event) {
+    fs.readdir(dirPath, (err, files) => {
+        if (err) {
+            console.error(`Error reading directory ${dirPath}: ${err}`);
+            return;
+        }
+
+        files.forEach((file) => {
+            const filePath = path.join(dirPath, file);
+            fs.stat(filePath, (err, stats) => {
+                if (err) {
+                    console.error(`Error getting stats for ${filePath}: ${err}`);
+                    return;
+                }
+
+                if (stats.isDirectory()) {
+                    watchDirectory(filePath, event); // Recursive call
+                } else {
+                    watchFile(filePath, event);
+                }
+            });
+        });
+    });
+}
 
 ipcMain.handle('startServer', (event, filePath) => {
     return new Promise((resolve) => {
-        webServerProcess = spawn('node', [filePath]);
-
-        webServerProcess.stdout.on('data', (data) => {
-            event.sender.send('server-output', data.toString());
-        });
-
-        webServerProcess.stderr.on('data', (data) => {
-            event.sender.send('server-output', data.toString());
-        });
-
-        webServerProcess.on('close', (code) => {
-            if (code !== 0) {
-                resolve({ error: `Server process exited with code ${code}` });
-            } else {
-                resolve({ success: 'Server process closed' });
-            }
-        });
-
+        if (webServerProcess) {
+            webServerProcess.kill();
+            webServerProcess = null;
+        }
+        startWebServer(event);
+        watchFile(filePathToWatch, event); // Watch webServer.js
+        watchDirectory(publicDir, event); // Watch public directory recursively
         resolve({ success: 'Server started' });
     });
 });
@@ -74,6 +113,8 @@ ipcMain.handle('startServer', (event, filePath) => {
 ipcMain.handle('stopServer', () => {
     return new Promise((resolve) => {
         if (webServerProcess) {
+            fileWatchers.forEach((watcher) => watcher.close());
+            fileWatchers = [];
             webServerProcess.kill();
             webServerProcess = null;
             resolve({ success: 'Server stopped' });
@@ -105,12 +146,6 @@ ipcMain.handle('closeWindow', () => { // Changed to ipcMain.handle
     mainWindow.close();
     return { success: 'Window closed' };
 });
-
-// App Development Reloader
-try {
-  require('electron-reloader')(module)
-} catch (_) {}
-
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
@@ -132,6 +167,3 @@ app.on('activate', () => {
     createWindow();
   }
 });
-
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and import them here.
