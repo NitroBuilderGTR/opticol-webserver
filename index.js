@@ -62,11 +62,16 @@ function restartWebServer(event) {
 }
 
 function watchFile(filePath, event) {
+    let debounceTimer; // Add debounce timer
+
     const watcher = fs.watch(filePath, (eventType, filename) => {
         if (eventType === 'change') {
-            console.log(`${filePath} changed; restarting server...`);
-            event.sender.send('server-output', `${filePath} changed; restarting server...`);
-            restartWebServer(event);
+            clearTimeout(debounceTimer); // Clear previous timer
+            debounceTimer = setTimeout(() => { // Set new timer
+                console.log(`${filePath} changed; restarting server...`);
+                event.sender.send('server-output', `${filePath} changed; restarting server...`);
+                restartWebServer(event);
+            }, 250); // Debounce delay (adjust as needed)
         }
     });
     fileWatchers.push(watcher);

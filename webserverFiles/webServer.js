@@ -25,7 +25,7 @@ app.listen(portNumber, (err) => {
 
 app.on('error', (err) => {
     if (err.code === 'EADDRINUSE') {
-        console.error(`Port ${portNumber} is already in use. Choose another port.`);
+        console.error(`[ERROR] Port ${portNumber} is already in use. Choose another port.`);
     } else {
         console.error('Server error:');
     }
